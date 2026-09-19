@@ -26,7 +26,7 @@ def graficar_payoff(precios, payoff, precio_actual, titulo, x_label, y_label):
     fig, ax = plt.subplots(figsize=(10, 5))  
     ax.plot(precios, payoff, color="#1E88E5", linewidth=3)  
     ax.axhline(0, color="black", linewidth=1.5)  
-    ax.axvline(precio_actual, color="orange", linestyle="--", label=f"Precio Actual (${precio_actual})")
+    ax.axvline(precio_actual, color="orange", linestyle="--", label=f"Precio Actual (USD {precio_actual})")
     ax.fill_between(precios, payoff, 0, where=(payoff >= 0), facecolor='#4CAF50', alpha=0.4, label="Ganancia (¡Premio!)")  
     ax.fill_between(precios, payoff, 0, where=(payoff < 0), facecolor='#F44336', alpha=0.4, label="Pérdida (¡Guau!)")  
       
@@ -37,29 +37,39 @@ def graficar_payoff(precios, payoff, precio_actual, titulo, x_label, y_label):
     ax.grid(alpha=0.3)  
     return fig  
 
-def cargar_imagen(ruta, caption, sidebar=False):
-    if os.path.exists(ruta):
-        try:
-            img = Image.open(ruta)
-            if sidebar:
-                st.sidebar.image(img, caption=caption, use_column_width=True)
-            else:
-                st.image(img, caption=caption, use_column_width=True)
-        except Exception as e:
-            if sidebar:
-                st.sidebar.warning(f"No se pudo cargar la imagen: {ruta}")
-            else:
-                st.warning(f"No se pudo cargar la imagen: {ruta}")
-    else:
+def cargar_imagen(nombre_archivo, caption, sidebar=False):
+    # Buscamos la imagen en distintas carpetas comunes de GitHub
+    posibles_rutas = [
+        f"img/{nombre_archivo}",
+        f"{nombre_archivo}",
+        f"Img/{nombre_archivo}"
+    ]
+    
+    img_cargada = None
+    for ruta in posibles_rutas:
+        if os.path.exists(ruta):
+            try:
+                img_cargada = Image.open(ruta)
+                break
+            except:
+                pass
+                
+    if img_cargada:
         if sidebar:
-            st.sidebar.warning(f"Falta imagen en repositorio: {ruta}")
+            st.sidebar.image(img_cargada, caption=caption, use_column_width=True)
         else:
-            st.warning(f"Falta imagen en repositorio: {ruta}")
+            st.image(img_cargada, caption=caption, use_column_width=True)
+    else:
+        # Texto discreto en vez de caja de error gigante
+        if sidebar:
+            st.sidebar.caption(f"[Falta subir: {nombre_archivo}]")
+        else:
+            st.caption(f"[Falta subir: {nombre_archivo}]")
   
 # ==========================================
 # BARRA LATERAL (MENÚ)
 # ==========================================
-cargar_imagen("img/cocker_teacher.jpg", "Prof. Firulais (Cocker Spaniel)", sidebar=True)
+cargar_imagen("cocker_teacher.jpg", "Prof. Firulais (Cocker Spaniel)", sidebar=True)
 
 st.sidebar.title("📖 El Manual del Prof. Firulais")  
 capitulo = st.sidebar.radio("Navega por las clases:", [  
@@ -80,7 +90,7 @@ if capitulo == "1. Introducción 'APB' (Conceptos)":
     
     col1, col2 = st.columns([1, 2])
     with col1:
-        cargar_imagen("img/cocker_student.jpg", "Vos tratando de entender opciones")
+        cargar_imagen("cocker_student.jpg", "Vos tratando de entender opciones")
     with col2:
         st.markdown("""
         ¡Hola! Soy el **Profesor Firulais**. Hoy te voy a enseñar qué es una **Opción Financiera**.  
@@ -93,27 +103,27 @@ if capitulo == "1. Introducción 'APB' (Conceptos)":
 
     st.header("🏠 El CALL (Como señar un departamento)")  
     st.markdown("""  
-    Imaginate que querés comprar un depto que vale **$100.000** pero no tenés toda la plata hoy. Sin embargo, estás seguro de que el precio va a subir.  
-    Vas a la inmobiliaria y le decís: "Te dejo una seña de **$5.000 (a esto le llamamos PRIMA)** para que me congeles el precio en **$100.000 (a esto le llamamos STRIKE)** por un año".  
+    Imaginate que querés comprar un depto que vale **USD 100.000** pero no tenés toda la plata hoy. Sin embargo, estás seguro de que el precio va a subir.  
+    Vas a la inmobiliaria y le decís: "Te dejo una seña de **USD 5.000 (a esto le llamamos PRIMA)** para que me congeles el precio en **USD 100.000 (a esto le llamamos STRIKE)** por un año".  
     
     ¿Qué pasa en un año?
-    *   📈 **Si el depto sube a $150.000:** ¡Golazo! Lo comprás a $100k, le restás tu seña, ¡Ganaste $45.000 limpios!  
-    *   📉 **Si el depto baja a $80.000:** Obvio que no lo comprás a $100k. Te vas corriendo, perdiste tu seña de $5.000, pero ¡zafaste de perder mucho más! Tu pérdida máxima está limitada a la seña.
+    *   📈 **Si el depto sube a USD 150.000:** ¡Golazo! Lo comprás a USD 100k, le restás tu seña, ¡Ganaste USD 45.000 limpios!  
+    *   📉 **Si el depto baja a USD 80.000:** Obvio que no lo comprás a USD 100k. Te vas corriendo, perdiste tu seña de USD 5.000, pero ¡zafaste de perder mucho más! Tu pérdida máxima está limitada a la seña.
     """)  
       
     st.divider()
 
     st.header("🚗 El PUT (Como pagar el seguro del auto)")  
     st.markdown("""  
-    Tenés un auto hermoso que vale **$20.000** y querés asegurarlo para dormir tranquilo (como un perrito en su cucha).  
-    Pagás **$1.000 (la PRIMA)** por mes. Si el auto se destruye, la aseguradora te tiene que pagar los **$20.000 (el STRIKE)**.  
+    Tenés un auto hermoso que vale **USD 20.000** y querés asegurarlo para dormir tranquilo (como un perrito en su cucha).  
+    Pagás **USD 1.000 (la PRIMA)** por mes. Si el auto se destruye, la aseguradora te tiene que pagar los **USD 20.000 (el STRIKE)**.  
     
     ¿Qué pasa después?
-    *   💥 **Si chocás (el precio del auto cae a $0):** El seguro te salva las papas y cobrás los $20.000.  
-    *   😌 **Si no chocás:** "Perdiste" los $1.000 del seguro, pero tu auto sigue intacto y dormiste tranquilo todo el mes. ¡Es un buen trato!
+    *   💥 **Si chocás (el precio del auto cae a USD 0):** El seguro te salva las papas y cobrás los USD 20.000.  
+    *   😌 **Si no chocás:** "Perdiste" los USD 1.000 del seguro, pero tu auto sigue intacto y dormiste tranquilo todo el mes. ¡Es un buen trato!
     """)
     
-    cargar_imagen("img/options_concept.png", "Concepto visual de las opciones")
+    cargar_imagen("options_concept.png", "Concepto visual de las opciones")
   
 # ==========================================
 # CAPÍTULOS 2 y 3: BÁSICOS
