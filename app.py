@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt  
 import yfinance as yf
 from PIL import Image
+import os
 
 # ==========================================
 # CONFIGURACIÓN DE LA PÁGINA
@@ -35,11 +36,31 @@ def graficar_payoff(precios, payoff, precio_actual, titulo, x_label, y_label):
     ax.legend()  
     ax.grid(alpha=0.3)  
     return fig  
+
+def cargar_imagen(ruta, caption, sidebar=False):
+    if os.path.exists(ruta):
+        try:
+            img = Image.open(ruta)
+            if sidebar:
+                st.sidebar.image(img, caption=caption, use_column_width=True)
+            else:
+                st.image(img, caption=caption, use_column_width=True)
+        except Exception as e:
+            if sidebar:
+                st.sidebar.warning(f"No se pudo cargar la imagen: {ruta}")
+            else:
+                st.warning(f"No se pudo cargar la imagen: {ruta}")
+    else:
+        if sidebar:
+            st.sidebar.warning(f"Falta imagen en repositorio: {ruta}")
+        else:
+            st.warning(f"Falta imagen en repositorio: {ruta}")
   
 # ==========================================
 # BARRA LATERAL (MENÚ)
 # ==========================================
-st.sidebar.image("img/cocker_teacher.jpg", caption="Prof. Firulais (Cocker Spaniel)", use_column_width=True)
+cargar_imagen("img/cocker_teacher.jpg", "Prof. Firulais (Cocker Spaniel)", sidebar=True)
+
 st.sidebar.title("📖 El Manual del Prof. Firulais")  
 capitulo = st.sidebar.radio("Navega por las clases:", [  
     "1. Introducción 'APB' (Conceptos)",  
@@ -59,7 +80,7 @@ if capitulo == "1. Introducción 'APB' (Conceptos)":
     
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.image("img/cocker_student.jpg", caption="Vos tratando de entender opciones", use_column_width=True)
+        cargar_imagen("img/cocker_student.jpg", "Vos tratando de entender opciones")
     with col2:
         st.markdown("""
         ¡Hola! Soy el **Profesor Firulais**. Hoy te voy a enseñar qué es una **Opción Financiera**.  
@@ -92,7 +113,7 @@ if capitulo == "1. Introducción 'APB' (Conceptos)":
     *   😌 **Si no chocás:** "Perdiste" los $1.000 del seguro, pero tu auto sigue intacto y dormiste tranquilo todo el mes. ¡Es un buen trato!
     """)
     
-    st.image("img/options_concept.png", caption="Concepto visual de las opciones", use_column_width=True)
+    cargar_imagen("img/options_concept.png", "Concepto visual de las opciones")
   
 # ==========================================
 # CAPÍTULOS 2 y 3: BÁSICOS
