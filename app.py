@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np  
 import matplotlib.pyplot as plt  
 import yfinance as yf
-from PIL import Image
 import os
 
 # ==========================================
@@ -45,22 +44,19 @@ def cargar_imagen(nombre_archivo, caption, sidebar=False):
         f"Img/{nombre_archivo}"
     ]
     
-    img_cargada = None
+    ruta_encontrada = None
     for ruta in posibles_rutas:
         if os.path.exists(ruta):
-            try:
-                img_cargada = Image.open(ruta)
-                break
-            except:
-                pass
+            ruta_encontrada = ruta
+            break
                 
-    if img_cargada:
+    if ruta_encontrada:
         if sidebar:
-            st.sidebar.image(img_cargada, caption=caption, use_column_width=True)
+            st.sidebar.image(ruta_encontrada, caption=caption, use_column_width=True)
         else:
-            st.image(img_cargada, caption=caption, use_column_width=True)
+            st.image(ruta_encontrada, caption=caption, use_column_width=True)
     else:
-        # Texto discreto en vez de caja de error gigante
+        # Texto discreto en vez de caja de error
         if sidebar:
             st.sidebar.caption(f"[Falta subir: {nombre_archivo}]")
         else:
@@ -155,19 +151,19 @@ elif capitulo in ["2. Comprar Derechos (Calls y Puts)", "3. Vender Obligaciones 
             # Compras  
             if tipo_base == "CALL":  
                 payoff = np.maximum(precios - strike, 0) - prima  
-                st.info("💡 **Idea del Prof. Firulais:** Pagás la seña hoy. Si el precio vuela hacia la luna, tus ganancias no tienen límite. Si se desploma, lo peor que te pasa es que perdés la seña.")  
+                st.info(f"💡 **Idea del Prof. Firulais:** Pagás USD {prima:.2f} hoy. Si {ticker} vuela hacia la luna por encima de USD {strike:.2f}, tus ganancias no tienen límite. Si se desploma, lo peor que te pasa es que perdés tu seña de USD {prima:.2f}.")  
             else:  
                 payoff = np.maximum(strike - precios, 0) - prima  
-                st.info("💡 **Idea del Prof. Firulais:** Comprás un seguro para tu inversión. Protegés tu cartera de caídas bravas pagando una pequeña prima.")  
+                st.info(f"💡 **Idea del Prof. Firulais:** Comprás un seguro para tu inversión por USD {prima:.2f}. Protegés tus acciones de {ticker} si caen por debajo de USD {strike:.2f}.")  
         else:  
             st.subheader("Estás VENDIENDO (Asumís la Obligación)")
             # Ventas  
             if tipo_base == "CALL":  
                 payoff = np.minimum(strike - precios, 0) + prima  
-                st.error("⚠️ **¡Cuidado! Idea Riesgosa:** Cobrás la seña hoy. Pero si el precio sube muchísimo, ¡te obligan a vender barato! (Pérdidas infinitas, ¡guau!)")  
+                st.error(f"⚠️ **¡Cuidado! Idea Riesgosa:** Cobrás USD {prima:.2f} hoy. Pero si {ticker} sube muchísimo, ¡te obligan a vender barato a USD {strike:.2f}! (Pérdidas infinitas, ¡guau!)")  
             else:  
                 payoff = np.minimum(precios - strike, 0) + prima  
-                st.warning("⚠️ **Idea:** Acá vos sos la Aseguradora. Cobrás la prima y esperás que la acción NO caiga, porque si cae, te obligan a comprarla cara.")  
+                st.warning(f"⚠️ **Idea:** Acá vos sos la Aseguradora. Cobrás USD {prima:.2f} y esperás que {ticker} NO caiga, porque si cae por debajo de USD {strike:.2f}, te obligan a comprarla cara.")  
   
         fig = graficar_payoff(precios, payoff, precio_actual, f"{capitulo[3:10]} {tipo_base} - {ticker}", "Precio Futuro", "Tu Dinero (Payoff)")  
         st.pyplot(fig)  
@@ -202,7 +198,15 @@ elif capitulo == "4. Estrategias: Spreads (Direccionales)":
                 prima_cobrada = st.number_input("Prima Cobrada (Nos entra plata):", value=round(precio_actual*0.02, 2))  
                   
             precios = np.linspace(precio_actual * 0.7, precio_actual * 1.3, 200)  
-            payoff = (np.maximum(precios - strike_compra, 0) - prima_pagada) + (np.minimum(strike_venta - precios, 0) + prima_cobrada)  
+            payoff = (np.maximum(precios - strike_compra, 0) - prima_pagada) + (np.minimum(strike_venta - precios, 0) + prima_cobrada)
+            
+            st.info(f"""
+            🐶 **Ejemplo del Profe:** Como **{ticker}** vale **USD {precio_actual}**, armamos esta estrategia alcista.
+            - Pagás USD {prima_pagada} por un CALL base {strike_compra}, pero para que te salga más barato...
+            - Vendés un CALL base {strike_venta} y cobrás USD {prima_cobrada}.
+            - En total de tu bolsillo salen solo **USD {prima_pagada - prima_cobrada:.2f}** (Este es tu riesgo máximo absoluto).
+            - **Tu objetivo:** Que {ticker} suba por encima de USD {strike_venta}, pero a partir de ahí ya no ganas más, tu ganancia está topeada.
+            """)
         else:  
             with col1:  
                 st.markdown("### 1. Compramos un PUT (El Seguro)")
@@ -215,8 +219,15 @@ elif capitulo == "4. Estrategias: Spreads (Direccionales)":
                   
             precios = np.linspace(precio_actual * 0.7, precio_actual * 1.3, 200)  
             payoff = (np.maximum(strike_compra - precios, 0) - prima_pagada) + (np.minimum(precios - strike_venta, 0) + prima_cobrada)  
-  
-        st.info(f"💡 **Truco del Prof. Firulais:** Fijate que tu riesgo máximo es solo la diferencia de plata que pusiste: **USD {prima_pagada - prima_cobrada:.2f}**")  
+            
+            st.info(f"""
+            🐶 **Ejemplo del Profe:** Como **{ticker}** vale **USD {precio_actual}**, y creés que va a caer.
+            - Pagás USD {prima_pagada} por un PUT base {strike_compra}.
+            - Para abaratar, vendés un PUT base más bajo (USD {strike_venta}) y cobrás USD {prima_cobrada}.
+            - Tu costo final es solo **USD {prima_pagada - prima_cobrada:.2f}** (Tu riesgo máximo).
+            - **Tu objetivo:** Que la acción se desplome, pero ojo, tu ganancia máxima se frena si cae por debajo de USD {strike_venta}.
+            """)
+
         fig = graficar_payoff(precios, payoff, precio_actual, f"{tipo_spread} sobre {ticker}", "Precio Futuro", "Tu Dinero (Payoff)")  
         st.pyplot(fig)  
   
@@ -246,6 +257,13 @@ elif capitulo == "5. Estrategias: Volatilidad (Conos y Cunas)":
                 prima_p = st.number_input("Prima Put (Pagás por si baja):", value=round(precio_actual*0.05, 2))  
             precios = np.linspace(precio_actual * 0.7, precio_actual * 1.3, 200)  
             payoff = (np.maximum(precios - strike, 0) - prima_c) + (np.maximum(strike - precios, 0) - prima_p)  
+            
+            st.warning(f"""
+            🐶 **Ejemplo del Profe:** **{ticker}** está en **USD {precio_actual}**.  
+            Estás comprando tanto el derecho a comprar (Call) como a vender (Put) al mismo precio (USD {strike}).
+            Tu costo total es altísimo: **USD {prima_c + prima_p:.2f}**. 
+            **Recomendación:** Solo hacé esto si creés que mañana sale una noticia enorme de {ticker} que va a hacer que el precio suba por encima de USD {strike + prima_c + prima_p:.2f} o baje por debajo de USD {strike - (prima_c + prima_p):.2f}. ¡Si se queda quieto, perdés todo!
+            """)
         else:  
             st.markdown("### Cuna: Bases Separadas")
             col1, col2 = st.columns(2)  
@@ -257,8 +275,13 @@ elif capitulo == "5. Estrategias: Volatilidad (Conos y Cunas)":
                 prima_c = st.number_input("Prima Call:", value=round(precio_actual*0.02, 2))  
             precios = np.linspace(precio_actual * 0.7, precio_actual * 1.3, 200)  
             payoff = (np.maximum(precios - strike_c, 0) - prima_c) + (np.maximum(strike_p - precios, 0) - prima_p)  
-  
-        st.warning(f"⚠️ **Atención:** Costo Total que ponés en la mesa: **USD {prima_c + prima_p:.2f}**. ¡Necesitás un movimiento fuerte para superar ese costo y empezar a ganar!")  
+            
+            st.info(f"""
+            🐶 **Ejemplo del Profe:** Para no gastar tanto, separamos las bases.  
+            En vez de pagar una fortuna, pagás un total de **USD {prima_c + prima_p:.2f}**. 
+            **Recomendación:** Es más barato, pero ahora **{ticker}** tiene que moverse mucho más fuerte para que empieces a ganar. Tiene que dispararse arriba de USD {strike_c} o desplomarse debajo de USD {strike_p}. Si el precio de {ticker} se queda en el medio (entre USD {strike_p} y USD {strike_c}), perdés la inversión.
+            """)
+
         fig = graficar_payoff(precios, payoff, precio_actual, f"{tipo_vol[:15]} - {ticker}", "Precio Futuro", "Tu Dinero (Payoff)")  
         st.pyplot(fig)  
   
@@ -293,7 +316,12 @@ elif capitulo == "6. Estrategias Avanzadas (Mariposa y Túnel)":
                 p_alto = st.number_input("Prima Pagada 2:", value=round(precio_actual*0.01, 2))  
               
             payoff = (np.maximum(precios - s_bajo, 0) - p_bajo) + (2 * (np.minimum(s_medio - precios, 0) + p_medio)) + (np.maximum(precios - s_alto, 0) - p_alto)  
-              
+            
+            st.info(f"""
+            🐶 **Ejemplo del Profe:** Esta es mi favorita para mercados aburridos.  
+            Si creés que **{ticker}** se va a quedar clavado en **USD {precio_actual}**, armás esta carpa. Al vender dos opciones en el medio, financiás la compra de las de las puntas.
+            Tu riesgo está limitadísimo a la poca plata neta que pongas, ¡y ganás el premio mayor si el día de vencimiento la acción cierra justo en USD {s_medio}!
+            """)
         else:  
             st.markdown("### 🛡️ El Túnel Protector (Collar)")
             st.markdown("**Profesor Firulais explica:** Ya tenés acciones en tu portafolio. Las querés asegurar contra una caída comprando un PUT (Seguro de auto). Pero como es caro, vendés un CALL (cediendo las ganancias locas si sube mucho) para que te financie el seguro. ¡Quedás atrapado en un túnel seguro!")  
@@ -309,6 +337,13 @@ elif capitulo == "6. Estrategias Avanzadas (Mariposa y Túnel)":
             payoff_put = np.maximum(s_put - precios, 0) - p_put  
             payoff_call = np.minimum(s_call - precios, 0) + p_call  
             payoff = payoff_acciones + payoff_put + payoff_call  
-  
+            
+            st.success(f"""
+            🐶 **Ejemplo del Profe:** ¡Jugada maestra de protección! 
+            Vos tenés acciones de **{ticker}** compradas a **USD {precio_actual}**. 
+            Si se viene una crisis, comprás un seguro (PUT) en USD {s_put}. Para no pagarlo de tu bolsillo, vendés un techo (CALL) en USD {s_call}.
+            **Resultado:** No importa si hay un crash mundial, nunca venderás tus {ticker} por debajo de USD {s_put}. El único costo de esta seguridad total es que, si {ticker} sube a USD 200, te obligan a vender en USD {s_call} (ganás bien, pero cedés la suba infinita).
+            """)
+
         fig = graficar_payoff(precios, payoff, precio_actual, f"{estrategia[:15]} - {ticker}", "Precio Futuro", "Tu Dinero Total (Payoff)")  
         st.pyplot(fig)
