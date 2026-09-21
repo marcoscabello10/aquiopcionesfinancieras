@@ -2,8 +2,6 @@ import streamlit as st
 import numpy as np  
 import matplotlib.pyplot as plt  
 import yfinance as yf
-import os
-import traceback
 
 # ==========================================
 # CONFIGURACIÓN DE LA PÁGINA
@@ -38,38 +36,14 @@ def graficar_payoff(precios, payoff, precio_actual, titulo, x_label, y_label):
     return fig  
 
 def cargar_imagen(nombre_archivo, caption, sidebar=False):
-    posibles_rutas = [
-        f"img/{nombre_archivo}",
-        f"{nombre_archivo}",
-        f"Img/{nombre_archivo}"
-    ]
+    # La solución MÁS segura para Streamlit Cloud en GitHub es usar la URL directa cruda (Raw).
+    # Esto esquiva cualquier problema de rutas locales que tiene la nube de Streamlit.
+    url = f"https://raw.githubusercontent.com/marcoscabello10/aquiopcionesfinancieras/main/img/{nombre_archivo}"
     
-    ruta_encontrada = None
-    for ruta in posibles_rutas:
-        if os.path.exists(ruta):
-            ruta_encontrada = ruta
-            break
-                
-    if ruta_encontrada:
-        try:
-            # Streamlit Cloud prefiere que leamos los bytes si la ruta no le gusta
-            with open(ruta_encontrada, "rb") as f:
-                img_bytes = f.read()
-            if sidebar:
-                st.sidebar.image(img_bytes, caption=caption, use_column_width=True)
-            else:
-                st.image(img_bytes, caption=caption, use_column_width=True)
-        except Exception as e:
-            err_msg = str(e)
-            if sidebar:
-                st.sidebar.warning(f"Error cargando imagen: {err_msg}")
-            else:
-                st.warning(f"Error cargando imagen: {err_msg}")
+    if sidebar:
+        st.sidebar.image(url, caption=caption, use_column_width=True)
     else:
-        if sidebar:
-            st.sidebar.caption(f"[Falta subir: {nombre_archivo}]")
-        else:
-            st.caption(f"[Falta subir: {nombre_archivo}]")
+        st.image(url, caption=caption, use_column_width=True)
   
 # ==========================================
 # BARRA LATERAL (MENÚ)
