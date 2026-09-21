@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np  
 import matplotlib.pyplot as plt  
 import yfinance as yf
+import os
 
 # ==========================================
 # CONFIGURACIÓN DE LA PÁGINA
@@ -36,14 +37,46 @@ def graficar_payoff(precios, payoff, precio_actual, titulo, x_label, y_label):
     return fig  
 
 def cargar_imagen(nombre_archivo, caption, sidebar=False):
-    # La solución MÁS segura para Streamlit Cloud en GitHub es usar la URL directa cruda (Raw).
-    # Esto esquiva cualquier problema de rutas locales que tiene la nube de Streamlit.
-    url = f"https://raw.githubusercontent.com/marcoscabello10/aquiopcionesfinancieras/main/img/{nombre_archivo}"
-    
-    if sidebar:
-        st.sidebar.image(url, caption=caption, use_column_width=True)
-    else:
-        st.image(url, caption=caption, use_column_width=True)
+    # Envolvemos absolutamente todo en try-except para que NUNCA rompa la app
+    try:
+        # Obtenemos la ruta absoluta basada en donde está este script (app.py)
+        base_dir = os.path.dirname(__file__)
+        
+        # Posibles rutas donde podría estar la imagen (relativas a app.py)
+        rutas = [
+            os.path.join(base_dir, "img", nombre_archivo),
+            os.path.join(base_dir, nombre_archivo)
+        ]
+        
+        imagen_cargada = False
+        
+        for ruta in rutas:
+            if os.path.exists(ruta):
+                # Si existe, leemos los bytes crudos (Streamlit Cloud NUNCA falla con bytes)
+                with open(ruta, "rb") as f:
+                    img_bytes = f.read()
+                    
+                if sidebar:
+                    st.sidebar.image(img_bytes, caption=caption, use_column_width=True)
+                else:
+                    st.image(img_bytes, caption=caption, use_column_width=True)
+                    
+                imagen_cargada = True
+                break # Salimos del loop porque ya la encontramos
+        
+        if not imagen_cargada:
+            # Si no encontró el archivo en ninguna ruta, mostramos texto
+            if sidebar:
+                st.sidebar.caption(f"*(Falta foto: {nombre_archivo})*")
+            else:
+                st.caption(f"*(Falta foto: {nombre_archivo})*")
+                
+    except Exception as e:
+        # Si ocurre CUALQUIER error (permisos, memoria, lo que sea), no rompemos la app
+        if sidebar:
+            st.sidebar.caption(f"*(Error cargando {nombre_archivo})*")
+        else:
+            st.caption(f"*(Error cargando {nombre_archivo})*")
   
 # ==========================================
 # BARRA LATERAL (MENÚ)
