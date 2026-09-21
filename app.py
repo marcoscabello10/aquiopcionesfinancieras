@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt  
 import yfinance as yf
 import os
+import traceback
 
 # ==========================================
 # CONFIGURACIÓN DE LA PÁGINA
@@ -37,7 +38,6 @@ def graficar_payoff(precios, payoff, precio_actual, titulo, x_label, y_label):
     return fig  
 
 def cargar_imagen(nombre_archivo, caption, sidebar=False):
-    # Buscamos la imagen en distintas carpetas comunes de GitHub
     posibles_rutas = [
         f"img/{nombre_archivo}",
         f"{nombre_archivo}",
@@ -51,12 +51,21 @@ def cargar_imagen(nombre_archivo, caption, sidebar=False):
             break
                 
     if ruta_encontrada:
-        if sidebar:
-            st.sidebar.image(ruta_encontrada, caption=caption, use_column_width=True)
-        else:
-            st.image(ruta_encontrada, caption=caption, use_column_width=True)
+        try:
+            # Streamlit Cloud prefiere que leamos los bytes si la ruta no le gusta
+            with open(ruta_encontrada, "rb") as f:
+                img_bytes = f.read()
+            if sidebar:
+                st.sidebar.image(img_bytes, caption=caption, use_column_width=True)
+            else:
+                st.image(img_bytes, caption=caption, use_column_width=True)
+        except Exception as e:
+            err_msg = str(e)
+            if sidebar:
+                st.sidebar.warning(f"Error cargando imagen: {err_msg}")
+            else:
+                st.warning(f"Error cargando imagen: {err_msg}")
     else:
-        # Texto discreto en vez de caja de error
         if sidebar:
             st.sidebar.caption(f"[Falta subir: {nombre_archivo}]")
         else:
