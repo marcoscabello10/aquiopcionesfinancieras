@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np  
 import matplotlib.pyplot as plt  
 import yfinance as yf
-import os
 
 # ==========================================
 # CONFIGURACIÓN DE LA PÁGINA
@@ -36,52 +35,31 @@ def graficar_payoff(precios, payoff, precio_actual, titulo, x_label, y_label):
     ax.grid(alpha=0.3)  
     return fig  
 
-def cargar_imagen(nombre_archivo, caption, sidebar=False):
-    # Envolvemos absolutamente todo en try-except para que NUNCA rompa la app
+def cargar_imagen_internet(url, caption, sidebar=False):
+    # Streamlit maneja muy bien las URLs externas de forma nativa
     try:
-        # Obtenemos la ruta absoluta basada en donde está este script (app.py)
-        base_dir = os.path.dirname(__file__)
-        
-        # Posibles rutas donde podría estar la imagen (relativas a app.py)
-        rutas = [
-            os.path.join(base_dir, "img", nombre_archivo),
-            os.path.join(base_dir, nombre_archivo)
-        ]
-        
-        imagen_cargada = False
-        
-        for ruta in rutas:
-            if os.path.exists(ruta):
-                # Si existe, leemos los bytes crudos (Streamlit Cloud NUNCA falla con bytes)
-                with open(ruta, "rb") as f:
-                    img_bytes = f.read()
-                    
-                if sidebar:
-                    st.sidebar.image(img_bytes, caption=caption, use_column_width=True)
-                else:
-                    st.image(img_bytes, caption=caption, use_column_width=True)
-                    
-                imagen_cargada = True
-                break # Salimos del loop porque ya la encontramos
-        
-        if not imagen_cargada:
-            # Si no encontró el archivo en ninguna ruta, mostramos texto
-            if sidebar:
-                st.sidebar.caption(f"*(Falta foto: {nombre_archivo})*")
-            else:
-                st.caption(f"*(Falta foto: {nombre_archivo})*")
-                
-    except Exception as e:
-        # Si ocurre CUALQUIER error (permisos, memoria, lo que sea), no rompemos la app
         if sidebar:
-            st.sidebar.caption(f"*(Error cargando {nombre_archivo})*")
+            st.sidebar.image(url, caption=caption, use_column_width=True)
         else:
-            st.caption(f"*(Error cargando {nombre_archivo})*")
+            st.image(url, caption=caption, use_column_width=True)
+    except Exception as e:
+        # Fallback en caso de que se caiga la URL
+        if sidebar:
+            st.sidebar.caption(f"*(Imagen no disponible)*")
+        else:
+            st.caption(f"*(Imagen no disponible)*")
+
+# Diccionario con URLs de imágenes externas confiables (Unsplash / Wikimedia)
+URLS_IMAGENES = {
+    "profesor": "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=800&auto=format&fit=crop", # Perrito lindo/inteligente
+    "estudiante": "https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?q=80&w=800&auto=format&fit=crop", # Perrito prestando atencion
+    "concepto": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=800&auto=format&fit=crop" # Gráfico/Finanzas
+}
   
 # ==========================================
 # BARRA LATERAL (MENÚ)
 # ==========================================
-cargar_imagen("cocker_teacher.jpg", "Prof. Firulais (Cocker Spaniel)", sidebar=True)
+cargar_imagen_internet(URLS_IMAGENES["profesor"], "Prof. Firulais", sidebar=True)
 
 st.sidebar.title("📖 El Manual del Prof. Firulais")  
 capitulo = st.sidebar.radio("Navega por las clases:", [  
@@ -102,7 +80,7 @@ if capitulo == "1. Introducción 'APB' (Conceptos)":
     
     col1, col2 = st.columns([1, 2])
     with col1:
-        cargar_imagen("cocker_student.jpg", "Vos tratando de entender opciones")
+        cargar_imagen_internet(URLS_IMAGENES["estudiante"], "Vos tratando de entender opciones")
     with col2:
         st.markdown("""
         ¡Hola! Soy el **Profesor Firulais**. Hoy te voy a enseñar qué es una **Opción Financiera**.  
@@ -135,7 +113,7 @@ if capitulo == "1. Introducción 'APB' (Conceptos)":
     *   😌 **Si no chocás:** "Perdiste" los USD 1.000 del seguro, pero tu auto sigue intacto y dormiste tranquilo todo el mes. ¡Es un buen trato!
     """)
     
-    cargar_imagen("options_concept.png", "Concepto visual de las opciones")
+    cargar_imagen_internet(URLS_IMAGENES["concepto"], "Mercado y Opciones")
   
 # ==========================================
 # CAPÍTULOS 2 y 3: BÁSICOS
